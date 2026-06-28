@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Tasks"/>
+  <meta name="theme-color" content="#1e2030"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <title>Andi's Daily Task Sorter</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root{--accent-1:#c800ff;--accent-2:#00e5ff;--accent-1-dim:rgba(200,0,255,0.18);--accent-2-dim:rgba(0,229,255,0.18);--bg:#1e2030;--bg-raised:#252838;--bg-inset:#191c2a;--shadow-out-sm:4px 4px 10px rgba(0,0,0,0.5),-3px -3px 8px rgba(255,255,255,0.04);--shadow-out:8px 8px 20px rgba(0,0,0,0.6),-5px -5px 14px rgba(255,255,255,0.05);--shadow-out-lg:12px 12px 28px rgba(0,0,0,0.65),-6px -6px 18px rgba(255,255,255,0.055);--shadow-in:inset 4px 4px 10px rgba(0,0,0,0.55),inset -3px -3px 8px rgba(255,255,255,0.04);--shadow-in-deep:inset 6px 6px 14px rgba(0,0,0,0.65),inset -4px -4px 10px rgba(255,255,255,0.045);--text:#cdd6f4;--text-dim:rgba(205,214,244,0.45);--text-faint:rgba(205,214,244,0.22);--radius:16px;--radius-sm:10px}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+    body{background:var(--bg);font-family:'DM Sans',sans-serif;color:var(--text);min-height:100vh;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+    #header{position:sticky;top:0;z-index:50;background:var(--bg);padding:20px 20px 16px;padding-top:calc(20px + env(safe-area-inset-top));border-bottom:1px solid rgba(255,255,255,0.05)}
+    #header .inner{max-width:640px;margin:0 auto}
+    .title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .app-title{font-size:18px;font-weight:600;letter-spacing:-.3px;color:var(--text)}
+    .app-date{font-size:11px;color:var(--text-dim);margin-top:2px;font-family:'DM Mono',monospace}
+    .btn-row{display:flex;gap:8px}
+    .ghost-btn{background:var(--bg-raised);box-shadow:var(--shadow-out-sm);border:none;border-radius:var(--radius-sm);padding:6px 12px;font-size:11px;font-weight:500;color:var(--text-dim);cursor:pointer;font-family:inherit;transition:box-shadow .15s,color .15s}
+    .ghost-btn:active{box-shadow:var(--shadow-in);color:var(--text)}.ghost-btn.danger{color:rgba(255,100,100,0.55)}
+    .tab-bar{display:flex;gap:8px}
+    .tab{flex:1;padding:10px 0;border:none;border-radius:var(--radius-sm);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;background:var(--bg-raised);box-shadow:var(--shadow-out-sm);color:var(--text-dim)}
+    .tab.active{box-shadow:var(--shadow-in);color:var(--text);background:var(--bg-inset)}.tab.active.focus-tab{color:var(--accent-2)}.tab.disabled{opacity:.4;cursor:default}
+    .progress-wrap{margin-top:12px}.progress-track{height:4px;border-radius:2px;background:var(--bg-inset);box-shadow:var(--shadow-in);overflow:hidden}
+    .progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent-1),var(--accent-2));transition:width .4s ease}
+    .progress-label{font-size:11px;color:var(--text-faint);text-align:right;margin-top:5px;font-family:'DM Mono',monospace}
+    #body{max-width:640px;margin:0 auto;padding:20px 52px 100px 20px;padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+    .hint{font-size:12px;color:var(--text-dim);margin-bottom:20px;line-height:1.5}.hint strong{color:var(--accent-2);font-weight:600}
+    .cat-section{margin-bottom:24px}.cat-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+    .cat-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+    .cat-name{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint)}
+    .card{display:flex;align-items:center;gap:12px;background:var(--bg-raised);box-shadow:var(--shadow-out-sm);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;transition:box-shadow .15s}
+    .card.focus-card{touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+    .card.focus-card.over{box-shadow:inset 2px 2px 6px rgba(0,0,0,0.4),inset -2px -2px 6px rgba(255,255,255,0.03),0 0 0 1.5px var(--accent-2)}
+    .card.done{box-shadow:var(--shadow-in);background:var(--bg-inset)}
+    .task-text{flex:1;font-size:14px;line-height:1.4;color:var(--text);transition:color .2s}.task-text.done{color:var(--text-faint);text-decoration:line-through}
+    .task-cat-label{font-size:11px;color:var(--text-faint);margin-top:2px;font-family:'DM Mono',monospace}
+    .drag-handle{color:var(--text-faint);font-size:16px;cursor:grab;flex-shrink:0;line-height:1;letter-spacing:2px}
+    .checkbox{width:24px;height:24px;border-radius:8px;flex-shrink:0;background:var(--bg-inset);box-shadow:var(--shadow-in);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s}
+    .checkbox.checked{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));box-shadow:0 0 12px var(--accent-1-dim),var(--shadow-out-sm)}
+    .checkbox .check-mark{color:#fff;font-size:13px;font-weight:700;line-height:1}
+    .do-today-btn{flex-shrink:0;padding:6px 14px;border-radius:var(--radius-sm);border:none;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;transition:all .2s;background:var(--bg-inset);box-shadow:var(--shadow-in);color:var(--text-dim)}
+    .do-today-btn.selected{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));box-shadow:0 0 16px var(--accent-1-dim),var(--shadow-out-sm);color:#fff}
+    .submit-btn{width:100%;padding:16px;border-radius:var(--radius);border:none;font-size:15px;font-weight:700;font-family:inherit;margin-top:8px;cursor:pointer;transition:all .2s}
+    .submit-btn.active{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));box-shadow:0 4px 24px var(--accent-1-dim),var(--shadow-out);color:#fff}
+    .submit-btn.inactive{background:var(--bg-inset);box-shadow:var(--shadow-in);color:var(--text-faint);cursor:default}
+    .add-more-section{margin-top:28px;border-top:1px solid rgba(255,255,255,0.05);padding-top:20px}
+    .add-more-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-faint);margin-bottom:10px}
+    .add-more-btn{padding:5px 12px;border-radius:var(--radius-sm);border:none;background:var(--bg-inset);box-shadow:var(--shadow-in);color:var(--text-dim);font-size:12px;cursor:pointer;font-family:inherit}
+    .remove-btn{flex-shrink:0;width:28px;height:28px;border-radius:8px;border:none;background:var(--bg-inset);box-shadow:var(--shadow-in);color:var(--text-faint);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:color .15s;line-height:1}
+    .remove-btn:active{color:rgba(255,100,100,0.7)}
+    .empty-state{text-align:center;padding:60px 0;color:var(--text-dim)}
+    .empty-btn{margin-top:16px;background:var(--bg-raised);box-shadow:var(--shadow-out-sm);border:none;border-radius:var(--radius);padding:12px 24px;color:var(--text);font-size:14px;cursor:pointer;font-family:inherit}
+    #fab{position:fixed;bottom:calc(32px + env(safe-area-inset-bottom));right:24px;width:58px;height:58px;border-radius:50%;border:none;cursor:pointer;z-index:100;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));box-shadow:0 6px 24px var(--accent-1-dim),0 3px 10px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:26px;color:#fff;font-weight:300}
+    .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(10,12,20,0.75);backdrop-filter:blur(8px);display:flex;align-items:flex-end;justify-content:center}
+    .modal{background:var(--bg-raised);box-shadow:var(--shadow-out-lg);border-radius:24px 24px 0 0;padding:28px 24px 48px;padding-bottom:calc(48px + env(safe-area-inset-bottom));width:100%;max-width:640px;animation:slideUp .22s cubic-bezier(.22,1,.36,1)}
+    @keyframes slideUp{from{transform:translateY(80px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .modal-title{font-size:17px;font-weight:600;color:var(--text);margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+    .modal-close{background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;line-height:1}
+    .modal-input{width:100%;margin-bottom:14px;background:var(--bg-inset);box-shadow:var(--shadow-in-deep);border:none;border-radius:var(--radius);padding:14px 16px;color:var(--text);font-size:15px;font-family:inherit;outline:none;-webkit-user-select:text;user-select:text;touch-action:auto}
+    .modal-input::placeholder{color:var(--text-faint)}
+    .modal-select{width:100%;margin-bottom:18px;background:var(--bg-inset);box-shadow:var(--shadow-in-deep);border:none;border-radius:var(--radius);padding:13px 16px;color:var(--text);font-size:14px;font-family:inherit;outline:none;appearance:none}
+    .toggle-row{display:flex;align-items:center;gap:12px;margin-bottom:22px;cursor:pointer;user-select:none}
+    .toggle-track{width:42px;height:24px;border-radius:12px;background:var(--bg-inset);box-shadow:var(--shadow-in);position:relative;flex-shrink:0;transition:background .2s}
+    .toggle-track.on{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));box-shadow:0 0 10px var(--accent-1-dim)}
+    .toggle-thumb{position:absolute;top:4px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);transition:left .2s}
+    .toggle-label{font-size:13px;color:var(--text-dim)}
+    .modal-save-btn{width:100%;padding:15px;border-radius:var(--radius);border:none;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s}
+    .modal-save-btn.ready{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));box-shadow:0 4px 20px var(--accent-1-dim);color:#fff}
+    .modal-save-btn.not-ready{background:var(--bg-inset);box-shadow:var(--shadow-in);color:var(--text-faint);cursor:default}
+    option{background:#252838}
+  </style>
+</head>
+<body>
+<div id="header"></div>
+<div id="body"></div>
+<script>
+const ACCENT_1="#c800ff",ACCENT_2="#00e5ff";
+const INITIAL_TASKS=[
+  {id:1,text:"Build Cesca chair seat bottoms",cat:"🏠 Household"},
+  {id:2,text:"Desk refinish project — buy spray supplies (shopping list in OB)",cat:"🏠 Household"},
+  {id:3,text:"Buy 3M 60923 respirator cartridges for refinish + art studio (~$25-30)",cat:"🏠 Household"},
+  {id:4,text:"Deal with iCloud overflow — add storage, shut down Dropbox, clean photos via Swipe Wipe",cat:"🏠 Household"},
+  {id:5,text:"Find Ollie's iPad — set up as drawing tool only, remove all other apps",cat:"👨‍👩‍👧‍👦 Family"},
+  {id:6,text:"Help Ollie sort out his YouTube issues",cat:"👨‍👩‍👧‍👦 Family"},
+  {id:7,text:"Ollie needs to find a switch",cat:"👨‍👩‍👧‍👦 Family"},
+  {id:8,text:"Ollie clean room (6/29)",cat:"👨‍👩‍👧‍👦 Family"},
+  {id:9,text:"Watch a movie together as family when screens come back on",cat:"👨‍👩‍👧‍👦 Family"},
+  {id:10,text:"Ask Carly if Jen knows anyone hiring for Alexa",cat:"👨‍👩‍👧‍👦 Family"},
+  {id:11,text:"Establish guardianship/healthcare proxy for John — before Sept 2026",cat:"⚖️ Legal & Finance"},
+  {id:12,text:"Get POA for Ollie (Henry handling, POA over guardianship)",cat:"⚖️ Legal & Finance"},
+  {id:13,text:"Apply for Social Security for Ollie — target mid-August filing as adult",cat:"⚖️ Legal & Finance"},
+  {id:14,text:"Set up ABLE account — call Steve Gephart (484-883-7131)",cat:"⚖️ Legal & Finance"},
+  {id:15,text:"Google Workspace backup/shutdown — Henry's law firm (Takeout export started 6/28)",cat:"⚖️ Legal & Finance"},
+  {id:16,text:"Bill-saving subscription audit — cut unneeded subscriptions",cat:"⚖️ Legal & Finance"},
+  {id:17,text:"GoFundMe for Ian/Katy/Kaia — monitor campaign",cat:"⚖️ Legal & Finance"},
+  {id:18,text:"Write cover letter + send records to MGH for Dr. Schmahmann consultation (appeal won)",cat:"🧬 Health & Labs"},
+  {id:19,text:"Await Dr. Chang response — medication perspectives + postdoc connection to Schmahmann",cat:"🧬 Health & Labs"},
+  {id:20,text:"Call Dr. Fab — schedule Ollie's eye appointment re: PRISM glasses",cat:"🧬 Health & Labs"},
+  {id:21,text:"Call Karen Kelly — ask about processing speed test",cat:"🧬 Health & Labs"},
+  {id:22,text:"Set up doctor appointment for Ollie's issue",cat:"🧬 Health & Labs"},
+  {id:23,text:"Schedule Helen's brain MRI (sibling cyst/WWOX comparison)",cat:"🧬 Health & Labs"},
+  {id:24,text:"Get current WISC-V evaluation for John (PSI trajectory unknown since 2020)",cat:"🧬 Health & Labs"},
+  {id:25,text:"Order FRAA test + B12/CBC (prerequisite before leucovorin)",cat:"🧬 Health & Labs"},
+  {id:26,text:"Order anti-AAV9 antibody titer test (screen before Mahzi trial)",cat:"🧬 Health & Labs"},
+  {id:27,text:"Rotate Supabase keys + update GitHub Secrets & 1Password",cat:"💻 Tech & Open Brain"},
+  {id:28,text:"Look into Vercel agent-based browser or Playwright",cat:"💻 Tech & Open Brain"},
+  {id:29,text:"Organize all passwords into one password manager",cat:"💻 Tech & Open Brain"},
+  {id:30,text:"Record proof-of-concept video (HyperFrames, LiveFine pill dispenser)",cat:"🎬 Generations of Care"},
+  {id:31,text:"Persona framing workshop — finalize name/identity for brand",cat:"🎬 Generations of Care"},
+  {id:32,text:"Build 4 plans (POC, tech stack, phase 1, growth) — when ready",cat:"🎬 Generations of Care"},
+  {id:33,text:"Ongoing competitive analysis (Tori Windsor Foisy, ThriveWise, etc.)",cat:"🎬 Generations of Care"},
+  {id:34,text:"Check if FB secondary profiles support Professional Mode",cat:"🎬 Generations of Care"},
+];
+const CAT_COLORS={"🏠 Household":"#f59e0b","👨‍👩‍👧‍👦 Family":"#ec4899","⚖️ Legal & Finance":"#8b5cf6","🧬 Health & Labs":"#10b981","💻 Tech & Open Brain":"#3b82f6","🎬 Generations of Care":"#f97316"};
+const ALL_CATS=[...new Set(INITIAL_TASKS.map(t=>t.cat))];
+const STORAGE_KEY="andi_task_sorter_v8";
+const TODAY=new Date().toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric"});
+function loadState(){try{const r=localStorage.getItem(STORAGE_KEY);return r?JSON.parse(r):null}catch{return null}}
+function persist(s){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(s))}catch{}}
+function hardReset(){localStorage.removeItem(STORAGE_KEY);location.reload()}
+const saved=loadState();
+if(saved?.tasks)saved.tasks=saved.tasks.map(t=>({...t,cat:t.cat||t.category||"🏠 Household"}));
+let STATE={mode:saved?.mode??"review",tasks:saved?.tasks??INITIAL_TASKS,selected:new Set(saved?.selected??[]),shortlist:saved?.shortlist??[],completed:new Set(saved?.completed??[]),modalOpen:false,modalDefaultToday:false};
+function save(){persist({mode:STATE.mode,tasks:STATE.tasks,selected:[...STATE.selected],shortlist:STATE.shortlist,completed:[...STATE.completed]})}
+function setState(patch){Object.assign(STATE,patch);save();render()}
+const drag={active:false,id:null,startY:0,node:null};
+function touchStart(e,id){e.preventDefault();e.stopPropagation();const t=e.touches[0];drag.active=true;drag.id=id;drag.startY=t.clientY;drag.node=e.currentTarget;drag.node.style.opacity="0.4";drag.node.style.transform="scale(1.02)";drag.node.style.zIndex="999"}
+function touchMove(e){if(!drag.active)return;e.preventDefault();const t=e.touches[0];drag.node.style.transform=`translateY(${t.clientY-drag.startY}px) scale(1.02)`;document.querySelectorAll("[data-drag-id]").forEach(n=>{if(n===drag.node)return;const r=n.getBoundingClientRect();n.style.outline=(t.clientY>=r.top&&t.clientY<=r.bottom)?`1.5px solid ${ACCENT_2}`:""})}
+function touchEnd(e){if(!drag.active)return;drag.active=false;const t=e.changedTouches[0];const dist=Math.abs(t.clientY-drag.startY);drag.node.style.transform="";drag.node.style.opacity="";drag.node.style.zIndex="";document.querySelectorAll("[data-drag-id]").forEach(n=>n.style.outline="");if(dist<8){const tapped=document.elementFromPoint(t.clientX,t.clientY);const cb=tapped&&tapped.closest("[data-checkbox-id]");if(cb){const cid=Number(cb.dataset.checkboxId);const c=new Set(STATE.completed);c.has(cid)?c.delete(cid):c.add(cid);setState({completed:c});drag.id=null;return}}let targetId=null,insertBefore=true;document.querySelectorAll("[data-drag-id]").forEach(n=>{if(n===drag.node)return;const r=n.getBoundingClientRect();if(t.clientY>=r.top&&t.clientY<=r.bottom){targetId=Number(n.dataset.dragId);insertBefore=t.clientY<r.top+r.height/2}});if(targetId!==null&&targetId!==drag.id){const arr=[...STATE.shortlist];const fi=arr.indexOf(drag.id),ti=arr.indexOf(targetId);arr.splice(fi,1);const ins=insertBefore?ti:ti+1;arr.splice(ins>fi?ins-1:ins,0,drag.id);setState({shortlist:arr})}drag.id=null}
+let deskDragId=null;
+function el(tag,props,...children){const e=document.createElement(tag);if(props)Object.entries(props).forEach(([k,v])=>{if(k==="style"&&typeof v==="object")Object.assign(e.style,v);else if(k.startsWith("on"))e.addEventListener(k.slice(2).toLowerCase(),v);else if(k==="className")e.className=v;else if(k==="dataset")Object.entries(v).forEach(([dk,dv])=>e.dataset[dk]=dv);else e.setAttribute(k,v)});children.flat().forEach(c=>{if(c==null||c===false)return;e.appendChild(typeof c==="string"||typeof c==="number"?document.createTextNode(c):c)});return e}
+const div=(p,...c)=>el("div",p,...c),span=(p,...c)=>el("span",p,...c),btn=(p,...c)=>el("button",p,...c),p_=(p,...c)=>el("p",p,...c),h1=(p,...c)=>el("h1",p,...c),h2=(p,...c)=>el("h2",p,...c),inp=(p)=>el("input",p),sel=(p,...c)=>el("select",p,...c);
+function buildModal(){let text="",cat=ALL_CATS[0],addToday=STATE.modalDefaultToday;const textInput=inp({type:"text",placeholder:"What needs to be done?",autofocus:"true",className:"modal-input"});textInput.addEventListener("input",e=>{text=e.target.value;updateSave()});textInput.addEventListener("keydown",e=>{if(e.key==="Enter")doSave()});const catSel=sel({className:"modal-select"},...ALL_CATS.map(c=>el("option",{value:c},c)));catSel.addEventListener("change",e=>cat=e.target.value);const track=div({className:"toggle-track"+(addToday?" on":"")});const thumb=div({className:"toggle-thumb",style:{left:addToday?"22px":"4px"}});track.appendChild(thumb);const toggleRow=div({className:"toggle-row"},track,span({className:"toggle-label"},"Add to shortlist"));toggleRow.addEventListener("click",()=>{addToday=!addToday;track.className="toggle-track"+(addToday?" on":"");thumb.style.left=addToday?"22px":"4px"});const saveBtn=btn({className:"modal-save-btn not-ready"},"Save Task");saveBtn.addEventListener("click",doSave);function updateSave(){saveBtn.className="modal-save-btn "+(text.trim()?"ready":"not-ready")}function doSave(){if(!text.trim())return;const t={id:Date.now(),text:text.trim(),cat};const patch={tasks:[...STATE.tasks,t],modalOpen:false};if(addToday){patch.shortlist=[...STATE.shortlist,t.id];const s=new Set(STATE.selected);s.add(t.id);patch.selected=s}setState(patch)}const overlay=div({className:"modal-overlay"});overlay.addEventListener("click",()=>setState({modalOpen:false}));const modal=div({className:"modal"});modal.addEventListener("click",e=>e.stopPropagation());modal.appendChild(div({className:"modal-title"},h2({style:{fontSize:"17px",fontWeight:"600",color:"var(--text)",fontFamily:"inherit"}},"New Task"),btn({className:"modal-close",onClick:()=>setState({modalOpen:false})},"×")));modal.appendChild(textInput);modal.appendChild(catSel);modal.appendChild(toggleRow);modal.appendChild(saveBtn);overlay.appendChild(modal);requestAnimationFrame(()=>requestAnimationFrame(()=>textInput.focus()));return overlay}
+function buildHeader(){const hdr=document.getElementById("header");hdr.innerHTML="";const inner=div({className:"inner"});const titleRow=div({className:"title-row"});titleRow.appendChild(div({},h1({className:"app-title"},"Andi's Daily Task Sorter"),p_({className:"app-date"},TODAY)));const btnRow=div({className:"btn-row"});const ndBtn=btn({className:"ghost-btn"},"↺ Clear Shortlist");ndBtn.addEventListener("click",()=>{setState({mode:"review",selected:new Set(),shortlist:[]})});const rsBtn=btn({className:"ghost-btn danger"},"⊗ Reset");rsBtn.addEventListener("click",hardReset);btnRow.appendChild(ndBtn);btnRow.appendChild(rsBtn);titleRow.appendChild(btnRow);inner.appendChild(titleRow);const tabBar=div({className:"tab-bar"});const tFull=btn({className:"tab"+(STATE.mode==="review"?" active":"")},"📋 Full View");tFull.addEventListener("click",()=>setState({mode:"review"}));const tFocus=btn({className:"tab focus-tab"+(STATE.mode==="focus"?" active":"")+(STATE.shortlist.length===0?" disabled":"")},"🎯 Shortlist"+(STATE.shortlist.length>0?` (${STATE.shortlist.length})`:""));tFocus.addEventListener("click",()=>{if(STATE.shortlist.length>0)setState({mode:"focus"})});tabBar.appendChild(tFull);tabBar.appendChild(tFocus);inner.appendChild(tabBar);if(STATE.mode==="focus"&&STATE.shortlist.length>0){const done=STATE.shortlist.filter(id=>STATE.completed.has(id)).length;const pct=Math.round((done/STATE.shortlist.length)*100);const pw=div({className:"progress-wrap"});const pt=div({className:"progress-track"});pt.appendChild(div({className:"progress-fill",style:{width:pct+"%"}}));pw.appendChild(pt);pw.appendChild(p_({className:"progress-label"},`${done} of ${STATE.shortlist.length} done`));inner.appendChild(pw)}hdr.appendChild(inner)}
+function buildReview(){const wrap=div({});wrap.appendChild(p_({className:"hint"},"Tap ",el("strong",{},"Do Today")," next to tasks you want on your shortlist."));ALL_CATS.forEach(cat=>{const items=STATE.tasks.filter(t=>t.cat===cat);if(!items.length)return;const dot=CAT_COLORS[cat]||"#94a3b8";const sec=div({className:"cat-section"});const hdr=div({className:"cat-header"});hdr.appendChild(div({className:"cat-dot",style:{background:dot}}));hdr.appendChild(span({className:"cat-name"},cat));sec.appendChild(hdr);items.forEach(task=>{const isSel=STATE.selected.has(task.id);const isDone=STATE.completed.has(task.id);const card=div({className:"card"});const info=div({style:{flex:"1"}});info.appendChild(div({className:"task-text"+(isDone?" done":"")},task.text));card.appendChild(info);const b=btn({className:"do-today-btn"+(isSel?" selected":"")},isSel?"✓ Today":"Do Today");b.addEventListener("click",()=>{const s=new Set(STATE.selected);s.has(task.id)?s.delete(task.id):s.add(task.id);setState({selected:s})});card.appendChild(b);sec.appendChild(card)});wrap.appendChild(sec)});const sub=btn({className:"submit-btn "+(STATE.selected.size?"active":"inactive")},STATE.selected.size?`Go to shortlist (${STATE.selected.size})`:"Select tasks to build your shortlist");sub.addEventListener("click",()=>{if(!STATE.selected.size)return;setState({shortlist:STATE.tasks.filter(t=>STATE.selected.has(t.id)).map(t=>t.id),mode:"focus"})});wrap.appendChild(sub);return wrap}
+function buildFocus(){const wrap=div({});if(!STATE.shortlist.length){const em=div({className:"empty-state"});em.appendChild(p_({style:{fontSize:"15px"}},"No shortlist yet."));const gb=btn({className:"empty-btn"},"Go to Full View →");gb.addEventListener("click",()=>setState({mode:"review"}));em.appendChild(gb);return em}wrap.appendChild(p_({className:"hint"},"Drag to reorder · Tap ● to complete"));const list=div({id:"focus-list"});const taskMap=Object.fromEntries(STATE.tasks.map(t=>[t.id,t]));STATE.shortlist.forEach(tid=>{const task=taskMap[tid];if(!task)return;const dot=CAT_COLORS[task.cat]||"#94a3b8";const done=STATE.completed.has(task.id);const card=div({className:"card focus-card"+(done?" done":""),dataset:{dragId:String(task.id)},draggable:"true"});card.addEventListener("touchstart",e=>touchStart(e,task.id),{passive:false});card.addEventListener("touchmove",touchMove,{passive:false});card.addEventListener("touchend",touchEnd);card.addEventListener("dragstart",e=>{deskDragId=task.id;e.dataTransfer.effectAllowed="move"});card.addEventListener("dragover",e=>{e.preventDefault();card.classList.add("over")});card.addEventListener("dragleave",()=>card.classList.remove("over"));card.addEventListener("drop",e=>{e.preventDefault();card.classList.remove("over");if(deskDragId===task.id)return;const arr=[...STATE.shortlist];const fi=arr.indexOf(deskDragId),ti=arr.indexOf(task.id);arr.splice(fi,1);arr.splice(ti,0,deskDragId);setState({shortlist:arr})});card.addEventListener("dragend",()=>deskDragId=null);card.appendChild(span({className:"drag-handle"},"⠿"));const cb=div({className:"checkbox"+(done?" checked":""),dataset:{checkboxId:String(task.id)}});if(done)cb.appendChild(span({className:"check-mark"},"✓"));cb.addEventListener("click",()=>{const c=new Set(STATE.completed);c.has(task.id)?c.delete(task.id):c.add(task.id);setState({completed:c})});card.appendChild(cb);const info=div({style:{flex:"1"}});info.appendChild(div({className:"task-text"+(done?" done":"")},task.text));info.appendChild(div({className:"task-cat-label"},task.cat));card.appendChild(info);const rb=btn({className:"remove-btn"},"×");rb.addEventListener("click",e=>{e.stopPropagation();const s=new Set(STATE.selected);s.delete(task.id);const sl=[...STATE.shortlist].filter(id=>id!==task.id);setState({selected:s,shortlist:sl})});card.appendChild(rb);list.appendChild(card)});wrap.appendChild(list);const extras=STATE.tasks.filter(t=>!STATE.selected.has(t.id));if(extras.length){const sec=div({className:"add-more-section"});sec.appendChild(p_({className:"add-more-label"},"Add more to shortlist"));extras.forEach(task=>{const row=div({className:"card",style:{opacity:"0.6"}});row.appendChild(div({className:"task-text",style:{flex:"1"}},task.text));const ab=btn({className:"add-more-btn"},"+ Add");ab.addEventListener("click",()=>{const s=new Set(STATE.selected);s.add(task.id);setState({shortlist:[...STATE.shortlist,task.id],selected:s})});row.appendChild(ab);sec.appendChild(row)});wrap.appendChild(sec)}return wrap}
+function render(){buildHeader();const body=document.getElementById("body");body.innerHTML="";body.appendChild(STATE.mode==="review"?buildReview():buildFocus());let fab=document.getElementById("fab");if(!fab){fab=btn({id:"fab"},"＋");document.body.appendChild(fab)}fab.onclick=()=>setState({modalOpen:true,modalDefaultToday:STATE.mode==="focus"});document.querySelectorAll(".modal-overlay").forEach(e=>e.remove());if(STATE.modalOpen)document.body.appendChild(buildModal())}
+render();
+</script>
+</body>
+</html>
