@@ -83,9 +83,10 @@
 <script>
 const ACCENT_1="#c800ff",ACCENT_2="#00e5ff";
 
-// --- Open Brain wiring (Stage 3, Step 5) ---
+// --- Open Brain wiring (Stage 3) ---
 const GET_TASKS_URL="https://syujfvdfgvgsawqbzifr.supabase.co/functions/v1/get-tasks";
 const MARK_DONE_URL="https://syujfvdfgvgsawqbzifr.supabase.co/functions/v1/mark-tasks-done";
+const CREATE_TASK_URL="https://syujfvdfgvgsawqbzifr.supabase.co/functions/v1/create-task";
 const APP_TOKEN="9f2d7a4c1e8b6f3a0d5c2e9b7a4f1d8c6e3b0a7f5d2c9e6b3a0f7d4c1e8b5a2";
 const LEGACY_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dWpmdmRmZ3Znc2F3cWJ6aWZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2OTE2MjYsImV4cCI6MjA5NjI2NzYyNn0.5NiyYi11K-RhwaatxYm1Mf1kb2LF0wndxM1Sscqp3aM";
 
@@ -112,7 +113,21 @@ async function markTaskDone(id){
     },
     body:JSON.stringify({id})
   });
-  if(!res.ok)throw new Error("mark-task-done responded with "+res.status);
+  if(!res.ok)throw new Error("mark-tasks-done responded with "+res.status);
+  return res.json();
+}
+async function createTaskInOpenBrain(content){
+  const res=await fetch(CREATE_TASK_URL,{
+    method:"POST",
+    headers:{
+      "x-app-token":APP_TOKEN,
+      "apikey":LEGACY_ANON_KEY,
+      "Authorization":"Bearer "+LEGACY_ANON_KEY,
+      "Content-Type":"application/json"
+    },
+    body:JSON.stringify({content})
+  });
+  if(!res.ok)throw new Error("create-task responded with "+res.status);
   return res.json();
 }
 const INITIAL_TASKS=[];
@@ -135,7 +150,53 @@ function touchEnd(e){if(!drag.active)return;drag.active=false;const t=e.changedT
 let deskDragId=null;
 function el(tag,props,...children){const e=document.createElement(tag);if(props)Object.entries(props).forEach(([k,v])=>{if(k==="style"&&typeof v==="object")Object.assign(e.style,v);else if(k.startsWith("on"))e.addEventListener(k.slice(2).toLowerCase(),v);else if(k==="className")e.className=v;else if(k==="dataset")Object.entries(v).forEach(([dk,dv])=>e.dataset[dk]=dv);else e.setAttribute(k,v)});children.flat().forEach(c=>{if(c==null||c===false)return;e.appendChild(typeof c==="string"||typeof c==="number"?document.createTextNode(c):c)});return e}
 const div=(p,...c)=>el("div",p,...c),span=(p,...c)=>el("span",p,...c),btn=(p,...c)=>el("button",p,...c),p_=(p,...c)=>el("p",p,...c),h1=(p,...c)=>el("h1",p,...c),h2=(p,...c)=>el("h2",p,...c),inp=(p)=>el("input",p),sel=(p,...c)=>el("select",p,...c);
-function buildModal(){let text="",cat=ALL_CATS[0],addToday=STATE.modalDefaultToday;const textInput=inp({type:"text",placeholder:"What needs to be done?",autofocus:"true",className:"modal-input"});textInput.addEventListener("input",e=>{text=e.target.value;updateSave()});textInput.addEventListener("keydown",e=>{if(e.key==="Enter")doSave()});const catSel=sel({className:"modal-select"},...ALL_CATS.map(c=>el("option",{value:c},c)));catSel.addEventListener("change",e=>cat=e.target.value);const track=div({className:"toggle-track"+(addToday?" on":"")});const thumb=div({className:"toggle-thumb",style:{left:addToday?"22px":"4px"}});track.appendChild(thumb);const toggleRow=div({className:"toggle-row"},track,span({className:"toggle-label"},"Add to shortlist"));toggleRow.addEventListener("click",()=>{addToday=!addToday;track.className="toggle-track"+(addToday?" on":"");thumb.style.left=addToday?"22px":"4px"});const saveBtn=btn({className:"modal-save-btn not-ready"},"Save Task");saveBtn.addEventListener("click",doSave);function updateSave(){saveBtn.className="modal-save-btn "+(text.trim()?"ready":"not-ready")}function doSave(){if(!text.trim())return;const t={id:String(Date.now()),text:text.trim(),cat};const patch={tasks:[...STATE.tasks,t],modalOpen:false};if(addToday){patch.shortlist=[...STATE.shortlist,t.id];const s=new Set(STATE.selected);s.add(t.id);patch.selected=s}setState(patch)}const overlay=div({className:"modal-overlay"});overlay.addEventListener("click",()=>setState({modalOpen:false}));const modal=div({className:"modal"});modal.addEventListener("click",e=>e.stopPropagation());modal.appendChild(div({className:"modal-title"},h2({style:{fontSize:"17px",fontWeight:"600",color:"var(--text)",fontFamily:"inherit"}},"New Task"),btn({className:"modal-close",onClick:()=>setState({modalOpen:false})},"×")));modal.appendChild(textInput);modal.appendChild(catSel);modal.appendChild(toggleRow);modal.appendChild(saveBtn);overlay.appendChild(modal);requestAnimationFrame(()=>requestAnimationFrame(()=>textInput.focus()));return overlay}
+function buildModal(){
+  let text="",addToday=STATE.modalDefaultToday,saving=false;
+  const textInput=inp({type:"text",placeholder:"What needs to be done?",autofocus:"true",className:"modal-input"});
+  textInput.addEventListener("input",e=>{text=e.target.value;updateSave()});
+  textInput.addEventListener("keydown",e=>{if(e.key==="Enter")doSave()});
+  const track=div({className:"toggle-track"+(addToday?" on":"")});
+  const thumb=div({className:"toggle-thumb",style:{left:addToday?"22px":"4px"}});
+  track.appendChild(thumb);
+  const toggleRow=div({className:"toggle-row"},track,span({className:"toggle-label"},"Add to shortlist"));
+  toggleRow.addEventListener("click",()=>{addToday=!addToday;track.className="toggle-track"+(addToday?" on":"");thumb.style.left=addToday?"22px":"4px"});
+  const saveBtn=btn({className:"modal-save-btn not-ready"},"Save Task");
+  saveBtn.addEventListener("click",doSave);
+  function updateSave(){if(saving)return;saveBtn.className="modal-save-btn "+(text.trim()?"ready":"not-ready")}
+  async function doSave(){
+    if(!text.trim()||saving)return;
+    saving=true;
+    saveBtn.className="modal-save-btn not-ready";
+    saveBtn.textContent="Saving…";
+    try{
+      const result=await createTaskInOpenBrain(text.trim());
+      const t={id:result.id,text:result.task_title,cat:result.category};
+      const patch={tasks:[...STATE.tasks,t],modalOpen:false};
+      if(addToday){
+        patch.shortlist=[...STATE.shortlist,t.id];
+        const s=new Set(STATE.selected);s.add(t.id);patch.selected=s;
+      }
+      setState(patch);
+    }catch(err){
+      console.error(err);
+      saving=false;
+      saveBtn.textContent="Save Task";
+      updateSave();
+      alert("Couldn't save this task — check your connection and try again.");
+    }
+  }
+  const overlay=div({className:"modal-overlay"});
+  overlay.addEventListener("click",()=>{if(!saving)setState({modalOpen:false})});
+  const modal=div({className:"modal"});
+  modal.addEventListener("click",e=>e.stopPropagation());
+  modal.appendChild(div({className:"modal-title"},h2({style:{fontSize:"17px",fontWeight:"600",color:"var(--text)",fontFamily:"inherit"}},"New Task"),btn({className:"modal-close",onClick:()=>{if(!saving)setState({modalOpen:false})}},"×")));
+  modal.appendChild(textInput);
+  modal.appendChild(toggleRow);
+  modal.appendChild(saveBtn);
+  overlay.appendChild(modal);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>textInput.focus()));
+  return overlay;
+}
 function buildHeader(){const hdr=document.getElementById("header");hdr.innerHTML="";const inner=div({className:"inner"});const titleRow=div({className:"title-row"});titleRow.appendChild(div({},h1({className:"app-title"},"Andi's Daily Task Sorter"),p_({className:"app-date"},TODAY)));const btnRow=div({className:"btn-row"});const rfBtn=btn({className:"ghost-btn"},STATE.loading?"⟳ …":"⟳ Refresh");rfBtn.addEventListener("click",loadTasks);const ndBtn=btn({className:"ghost-btn"},"↺ Clear Shortlist");ndBtn.addEventListener("click",()=>{setState({mode:"review",selected:new Set(),shortlist:[]})});const rsBtn=btn({className:"ghost-btn danger"},"⊗ Reset");rsBtn.addEventListener("click",hardReset);btnRow.appendChild(rfBtn);btnRow.appendChild(ndBtn);btnRow.appendChild(rsBtn);titleRow.appendChild(btnRow);inner.appendChild(titleRow);const tabBar=div({className:"tab-bar"});const tFull=btn({className:"tab"+(STATE.mode==="review"?" active":"")},"📋 Full View");tFull.addEventListener("click",()=>setState({mode:"review"}));const tFocus=btn({className:"tab focus-tab"+(STATE.mode==="focus"?" active":"")+(STATE.shortlist.length===0?" disabled":"")},"🎯 Shortlist"+(STATE.shortlist.length>0?` (${STATE.shortlist.length})`:""));tFocus.addEventListener("click",()=>{if(STATE.shortlist.length>0)setState({mode:"focus"})});tabBar.appendChild(tFull);tabBar.appendChild(tFocus);inner.appendChild(tabBar);if(STATE.mode==="focus"&&STATE.shortlist.length>0){const done=STATE.shortlist.filter(id=>STATE.completed.has(id)).length;const pct=Math.round((done/STATE.shortlist.length)*100);const pw=div({className:"progress-wrap"});const pt=div({className:"progress-track"});pt.appendChild(div({className:"progress-fill",style:{width:pct+"%"}}));pw.appendChild(pt);pw.appendChild(p_({className:"progress-label"},`${done} of ${STATE.shortlist.length} done`));inner.appendChild(pw)}hdr.appendChild(inner)}
 function buildReview(){const wrap=div({});if(STATE.loading){wrap.appendChild(p_({className:"hint"},"Loading tasks from Open Brain…"));return wrap}if(STATE.loadError){const em=div({className:"empty-state"});em.appendChild(p_({style:{fontSize:"14px",color:"rgba(255,100,100,0.7)"}},"Couldn't load tasks: "+STATE.loadError));const rb=btn({className:"empty-btn"},"Try again");rb.addEventListener("click",loadTasks);em.appendChild(rb);return em}wrap.appendChild(p_({className:"hint"},"Tap ",el("strong",{},"Do Today")," next to tasks you want on your shortlist."));ALL_CATS.forEach(cat=>{const items=STATE.tasks.filter(t=>t.cat===cat);if(!items.length)return;const dot=CAT_COLORS[cat]||"#94a3b8";const sec=div({className:"cat-section"});const hdr=div({className:"cat-header"});hdr.appendChild(div({className:"cat-dot",style:{background:dot}}));hdr.appendChild(span({className:"cat-name"},cat));sec.appendChild(hdr);items.forEach(task=>{const isSel=STATE.selected.has(task.id);const isDone=STATE.completed.has(task.id);const card=div({className:"card"});const info=div({style:{flex:"1"}});info.appendChild(div({className:"task-text"+(isDone?" done":"")},task.text));card.appendChild(info);const b=btn({className:"do-today-btn"+(isSel?" selected":"")},isSel?"✓ Today":"Do Today");b.addEventListener("click",()=>{const s=new Set(STATE.selected);s.has(task.id)?s.delete(task.id):s.add(task.id);setState({selected:s})});card.appendChild(b);sec.appendChild(card)});wrap.appendChild(sec)});const sub=btn({className:"submit-btn "+(STATE.selected.size?"active":"inactive")},STATE.selected.size?`Go to shortlist (${STATE.selected.size})`:"Select tasks to build your shortlist");sub.addEventListener("click",()=>{if(!STATE.selected.size)return;setState({shortlist:STATE.tasks.filter(t=>STATE.selected.has(t.id)).map(t=>t.id),mode:"focus"})});wrap.appendChild(sub);return wrap}
 function buildFocus(){const wrap=div({});if(!STATE.shortlist.length){const em=div({className:"empty-state"});em.appendChild(p_({style:{fontSize:"15px"}},"No shortlist yet."));const gb=btn({className:"empty-btn"},"Go to Full View →");gb.addEventListener("click",()=>setState({mode:"review"}));em.appendChild(gb);return em}wrap.appendChild(p_({className:"hint"},"Drag to reorder · Tap ● to complete"));const list=div({id:"focus-list"});const taskMap=Object.fromEntries(STATE.tasks.map(t=>[t.id,t]));STATE.shortlist.forEach(tid=>{const task=taskMap[tid];if(!task)return;const dot=CAT_COLORS[task.cat]||"#94a3b8";const done=STATE.completed.has(task.id);const card=div({className:"card focus-card"+(done?" done":""),dataset:{dragId:String(task.id)},draggable:"true"});card.addEventListener("touchstart",e=>touchStart(e,task.id),{passive:false});card.addEventListener("touchmove",touchMove,{passive:false});card.addEventListener("touchend",touchEnd);card.addEventListener("dragstart",e=>{deskDragId=task.id;e.dataTransfer.effectAllowed="move"});card.addEventListener("dragover",e=>{e.preventDefault();card.classList.add("over")});card.addEventListener("dragleave",()=>card.classList.remove("over"));card.addEventListener("drop",e=>{e.preventDefault();card.classList.remove("over");if(deskDragId===task.id)return;const arr=[...STATE.shortlist];const fi=arr.indexOf(deskDragId),ti=arr.indexOf(task.id);arr.splice(fi,1);arr.splice(ti,0,deskDragId);setState({shortlist:arr})});card.addEventListener("dragend",()=>deskDragId=null);card.appendChild(span({className:"drag-handle"},"⠿"));const cb=div({className:"checkbox"+(done?" checked":""),dataset:{checkboxId:String(task.id)}});if(done)cb.appendChild(span({className:"check-mark"},"✓"));cb.addEventListener("click",async()=>{
