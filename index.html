@@ -146,7 +146,60 @@ async function loadTasks(){setState({loading:true,loadError:null});try{const tas
 const drag={active:false,id:null,startY:0,node:null};
 function touchStart(e,id){e.preventDefault();e.stopPropagation();const t=e.touches[0];drag.active=true;drag.id=id;drag.startY=t.clientY;drag.node=e.currentTarget;drag.node.style.opacity="0.4";drag.node.style.transform="scale(1.02)";drag.node.style.zIndex="999"}
 function touchMove(e){if(!drag.active)return;e.preventDefault();const t=e.touches[0];drag.node.style.transform=`translateY(${t.clientY-drag.startY}px) scale(1.02)`;document.querySelectorAll("[data-drag-id]").forEach(n=>{if(n===drag.node)return;const r=n.getBoundingClientRect();n.style.outline=(t.clientY>=r.top&&t.clientY<=r.bottom)?`1.5px solid ${ACCENT_2}`:""})}
-function touchEnd(e){if(!drag.active)return;drag.active=false;const t=e.changedTouches[0];const dist=Math.abs(t.clientY-drag.startY);drag.node.style.transform="";drag.node.style.opacity="";drag.node.style.zIndex="";document.querySelectorAll("[data-drag-id]").forEach(n=>n.style.outline="");if(dist<8){const tapped=document.elementFromPoint(t.clientX,t.clientY);const cb=tapped&&tapped.closest("[data-checkbox-id]");if(cb){const cid=cb.dataset.checkboxId;const c=new Set(STATE.completed);c.has(cid)?c.delete(cid):c.add(cid);setState({completed:c});drag.id=null;return}}let targetId=null,insertBefore=true;document.querySelectorAll("[data-drag-id]").forEach(n=>{if(n===drag.node)return;const r=n.getBoundingClientRect();if(t.clientY>=r.top&&t.clientY<=r.bottom){targetId=n.dataset.dragId;insertBefore=t.clientY<r.top+r.height/2}});if(targetId!==null&&targetId!==drag.id){const arr=[...STATE.shortlist];const fi=arr.indexOf(drag.id),ti=arr.indexOf(targetId);arr.splice(fi,1);const ins=insertBefore?ti:ti+1;arr.splice(ins>fi?ins-1:ins,0,drag.id);setState({shortlist:arr})}drag.id=null}
+function touchEnd(e){
+  if(!drag.active)return;
+  drag.active=false;
+  const t=e.changedTouches[0];
+  const dist=Math.abs(t.clientY-drag.startY);
+  drag.node.style.transform="";
+  drag.node.style.opacity="";
+  drag.node.style.zIndex="";
+  document.querySelectorAll("[data-drag-id]").forEach(n=>n.style.outline="");
+
+  if(dist<8){
+    const tapped=document.elementFromPoint(t.clientX,t.clientY);
+    const cb=tapped&&tapped.closest("[data-checkbox-id]");
+    if(cb){
+      const cid=cb.dataset.checkboxId;
+      if(!STATE.completed.has(cid)){
+        cb.style.opacity="0.4";
+        markTaskDone(cid).then(()=>{
+          const tasks=STATE.tasks.filter(t=>t.id!==cid);
+          const shortlist=STATE.shortlist.filter(id=>id!==cid);
+          const selected=new Set(STATE.selected);
+          selected.delete(cid);
+          setState({tasks,shortlist,selected});
+        }).catch(err=>{
+          console.error(err);
+          cb.style.opacity="";
+          alert("Couldn't mark this done — check your connection and try again.");
+        });
+      }
+      drag.id=null;
+      return;
+    }
+  }
+
+  let targetId=null,insertBefore=true;
+  document.querySelectorAll("[data-drag-id]").forEach(n=>{
+    if(n===drag.node)return;
+    const r=n.getBoundingClientRect();
+    if(t.clientY>=r.top&&t.clientY<=r.bottom){
+      targetId=n.dataset.dragId;
+      insertBefore=t.clientY<r.top+r.height/2;
+    }
+  });
+
+  if(targetId!==null&&targetId!==drag.id){
+    const arr=[...STATE.shortlist];
+    const fi=arr.indexOf(drag.id),ti=arr.indexOf(targetId);
+    arr.splice(fi,1);
+    const ins=insertBefore?ti:ti+1;
+    arr.splice(ins>fi?ins-1:ins,0,drag.id);
+    setState({shortlist:arr});
+  }
+  drag.id=null;
+}
 let deskDragId=null;
 function el(tag,props,...children){const e=document.createElement(tag);if(props)Object.entries(props).forEach(([k,v])=>{if(k==="style"&&typeof v==="object")Object.assign(e.style,v);else if(k.startsWith("on"))e.addEventListener(k.slice(2).toLowerCase(),v);else if(k==="className")e.className=v;else if(k==="dataset")Object.entries(v).forEach(([dk,dv])=>e.dataset[dk]=dv);else e.setAttribute(k,v)});children.flat().forEach(c=>{if(c==null||c===false)return;e.appendChild(typeof c==="string"||typeof c==="number"?document.createTextNode(c):c)});return e}
 const div=(p,...c)=>el("div",p,...c),span=(p,...c)=>el("span",p,...c),btn=(p,...c)=>el("button",p,...c),p_=(p,...c)=>el("p",p,...c),h1=(p,...c)=>el("h1",p,...c),h2=(p,...c)=>el("h2",p,...c),inp=(p)=>el("input",p),sel=(p,...c)=>el("select",p,...c);
