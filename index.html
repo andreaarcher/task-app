@@ -87,7 +87,7 @@ const ACCENT_1="#c800ff",ACCENT_2="#00e5ff";
 const GET_TASKS_URL="https://syujfvdfgvgsawqbzifr.supabase.co/functions/v1/get-tasks";
 const MARK_DONE_URL="https://syujfvdfgvgsawqbzifr.supabase.co/functions/v1/mark-task-done";
 const APP_TOKEN="9f2d7a4c1e8b6f3a0d5c2e9b7a4f1d8c6e3b0a7f5d2c9e6b3a0f7d4c1e8b5a2";
-const LEGACY_ANON_KEY="dd";
+const LEGACY_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5dWpmdmRmZ3Znc2F3cWJ6aWZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2OTE2MjYsImV4cCI6MjA5NjI2NzYyNn0.5NiyYi11K-RhwaatxYm1Mf1kb2LF0wndxM1Sscqp3aM";
 
 async function fetchTasksFromOpenBrain(){
   const res=await fetch(GET_TASKS_URL,{
