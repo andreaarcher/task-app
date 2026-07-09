@@ -75,6 +75,9 @@
     .modal-save-btn.ready{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));box-shadow:0 4px 20px var(--accent-1-dim);color:#fff}
     .modal-save-btn.not-ready{background:var(--bg-inset);box-shadow:var(--shadow-in);color:var(--text-faint);cursor:default}
     option{background:#252838}
+    .ollie-divider{margin:32px 0 24px;border:none;border-top:1px solid rgba(0,229,255,0.15)}
+    .ollie-section-label{font-size:11px;font-weight:600;letter-spacing:.08em;color:rgba(0,229,255,0.5);margin-bottom:16px;text-transform:uppercase}
+    .ollie-source{font-size:10px;color:var(--text-faint);margin-top:2px;font-family:'DM Mono',monospace}
   </style>
 </head>
 <body>
@@ -100,7 +103,7 @@ async function fetchTasksFromOpenBrain(){
   });
   if(!res.ok)throw new Error("get-tasks responded with "+res.status);
   const data=await res.json();
-  return (data.tasks||[]).map(t=>({id:t.id,text:t.content,cat:t.category||"💻 Tech & Open Brain"}));
+  return (data.tasks||[]).map(t=>({id:t.id,text:t.content,cat:t.category||"💻 Tech & Open Brain",speaker:t.speaker||null,for_person:t.for_person||null}));
 }
 async function markTaskDone(id){
   const res=await fetch(MARK_DONE_URL,{
@@ -288,6 +291,9 @@ function buildHeader(){
   }
   hdr.appendChild(inner);
 }
+function isOllieTask(task){
+  return task.speaker==="ollie"||task.for_person==="ollie";
+}
 function buildReview(){
   const wrap=div({});
   if(STATE.loading){
@@ -304,18 +310,21 @@ function buildReview(){
   }
   wrap.appendChild(p_({className:"hint"},"Tap ",el("strong",{},"Do Today")," next to tasks you want on your shortlist."));
 
+  // Separate Ollie's tasks from main categories
+  const ollieTasks=STATE.tasks.filter(t=>isOllieTask(t));
+  const ollieIds=new Set(ollieTasks.map(t=>t.id));
+  const mainTasks=STATE.tasks.filter(t=>!ollieIds.has(t.id));
+
   // Build category list dynamically: known categories first in their usual
   // order, then any new/unrecognized categories appended in the order they
-  // were first seen. This means new categories the backend creates (e.g.
-  // via the dynamic-category/sprawl-control logic) automatically get their
-  // own section without needing a frontend code change.
+  // were first seen.
   const seen=new Set();
   const dynamicCats=[];
   ALL_CATS.forEach(c=>{if(!seen.has(c)){seen.add(c);dynamicCats.push(c)}});
-  STATE.tasks.forEach(t=>{if(!seen.has(t.cat)){seen.add(t.cat);dynamicCats.push(t.cat)}});
+  mainTasks.forEach(t=>{if(!seen.has(t.cat)){seen.add(t.cat);dynamicCats.push(t.cat)}});
 
   dynamicCats.forEach(cat=>{
-    const items=STATE.tasks.filter(t=>t.cat===cat);
+    const items=mainTasks.filter(t=>t.cat===cat);
     if(!items.length)return;
     const dot=CAT_COLORS[cat]||"#94a3b8";
     const sec=div({className:"cat-section"});
@@ -337,6 +346,30 @@ function buildReview(){
     });
     wrap.appendChild(sec);
   });
+
+  // ── Ollie's Tasks bucket ──────────────────────────────────────
+  if(ollieTasks.length){
+    wrap.appendChild(el("hr",{className:"ollie-divider"}));
+    wrap.appendChild(p_({className:"ollie-section-label"},"👦 Ollie's Tasks"));
+    const ollieSec=div({className:"cat-section"});
+
+    ollieTasks.forEach(task=>{
+      const isSel=STATE.selected.has(task.id);
+      const isDone=STATE.completed.has(task.id);
+      const card=div({className:"card"});
+      const info=div({style:{flex:"1"}});
+      info.appendChild(div({className:"task-text"+(isDone?" done":"")},task.text));
+      const sourceText=task.speaker==="ollie"?"captured by Ollie":"assigned to Ollie";
+      info.appendChild(div({className:"ollie-source"},sourceText+" · "+task.cat));
+      card.appendChild(info);
+      const b=btn({className:"do-today-btn"+(isSel?" selected":"")},isSel?"✓ Today":"Do Today");
+      b.addEventListener("click",()=>{const s=new Set(STATE.selected);s.has(task.id)?s.delete(task.id):s.add(task.id);setState({selected:s})});
+      card.appendChild(b);
+      ollieSec.appendChild(card);
+    });
+    wrap.appendChild(ollieSec);
+  }
+  // ──────────────────────────────────────────────────────────────
 
   const sub=btn({className:"submit-btn "+(STATE.selected.size?"active":"inactive")},STATE.selected.size?`Go to shortlist (${STATE.selected.size})`:"Select tasks to build your shortlist");
   sub.addEventListener("click",()=>{if(!STATE.selected.size)return;setState({shortlist:STATE.tasks.filter(t=>STATE.selected.has(t.id)).map(t=>t.id),mode:"focus"})});
